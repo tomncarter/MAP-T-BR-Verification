@@ -12,7 +12,7 @@ These scripts are built for testing a rule with the following parameters:
   - IPv4 Prefix: 198.18.0.0/24
   - IPv6 Prefix: 2001:db8:f0::/48
   - EA Length: 12
-  - PSID Offset: 12
+  - PSID Offset: 6
   - Default Mapping Rule: 2001:db8:ffff:ff00::/64
   
 If you are running this script across a network between the BR, you will need to ensure that the IPv4 and and Default Mapping
