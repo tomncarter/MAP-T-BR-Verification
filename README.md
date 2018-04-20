@@ -18,3 +18,6 @@ These scripts are built for testing a rule with the following parameters:
 If you are running this script across a network between the BR, you will need to ensure that the IPv4 and and Default Mapping
 Rule are routed to the Border Relay, and the IPv6 Prefix and the IPv4 Source (192.0.2.1) are routed to the host that 
 is sending the traffic.
+
+A big thanks to Uma Rao, who took the basic concept and made a script that looks like a real programmer did it, not a hack like it
+started as.
