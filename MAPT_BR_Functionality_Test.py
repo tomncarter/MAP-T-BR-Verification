@@ -81,7 +81,7 @@ class BRFunctionalityTest:
                     self.v6_port_check(pkt)
                     self.packet_error = True
                     self.comment += "\n  Fragment Header added"
-                if self.packet_error == True:
+                if self.packet_error:
                     fh = open("test_results.txt", "a")
                     fh.write(self.comment)
                     fh.close()
@@ -123,7 +123,7 @@ class BRFunctionalityTest:
             if pkt[0][IP].flags != 'DF':
                 self.comment += "\n  DF bit not set"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -168,7 +168,7 @@ class BRFunctionalityTest:
         if pkt[0][2].code != 0:
             self.comment += "\n  Incorrect Code Number"
             self.packet_error = True
-        if self.packet_error == True:
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -252,7 +252,7 @@ class BRFunctionalityTest:
             if pkt[0][2].options[0][1] != 1432:
                 self.comment += "\n  MSS not clamped to 1432"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -295,7 +295,7 @@ class BRFunctionalityTest:
         if pkt[0][2].options[0][1] != 1432:
             self.comment += "\n  MSS not clamped to 1432"
             self.packet_error = True
-        if self.packet_error == True:
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -343,7 +343,7 @@ class BRFunctionalityTest:
                 self.comment += pkt[0][2].code
                 self.comment += "\n"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -388,7 +388,7 @@ class BRFunctionalityTest:
             if pkt[0][2].code != 5:
                 self.comment += "\n  Incorrect Code Number"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -435,7 +435,7 @@ class BRFunctionalityTest:
                 count += 1
             if count != 2:
                 self.comment += "\n  Both fragments not received"
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -465,7 +465,7 @@ class BRFunctionalityTest:
             frags = scapy.all.fragment(packet, fragsize=1000)
             for fragment in frags:
                 send(fragment, iface="ens160")
-        if (not q.empty()):
+        if not q.empty():
             file_name = self.comment.lower() + ".pcap"
             pktdump = PcapWriter(file_name, append=True, sync=True)
             count = 0
@@ -485,7 +485,7 @@ class BRFunctionalityTest:
                 count += 1
             if count != 2:
                 self.comment += "\n  Both fragments not received"
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -526,7 +526,7 @@ class BRFunctionalityTest:
             if pkt[0][2].code != 0:
                 self.comment += "\n  Incorrect Code Number"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results_icmpv6.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -567,7 +567,7 @@ class BRFunctionalityTest:
             if pkt[0][2].code != 0:
                 self.comment += "\n  Incorrect Code Number"
                 self.packet_error = True
-        if self.packet_error == True:
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -577,7 +577,8 @@ class BRFunctionalityTest:
             fh.write(self.comment)
             fh.close()
 
-    # Destination Unreachable - No route to destination, Communication with destination administratively prohibited, Beyond scope of source address, Address unreachable, Port unreachable (Type 1, Code - 0/1/2/3/4)
+    # Destination Unreachable - No route to destination, Communication with destination administratively prohibited,
+    # Beyond scope of source address, Address unreachable, Port unreachable (Type 1, Code - 0/1/2/3/4)
 
     def destination_unreachable(self):
         self.m_finished = False
@@ -614,7 +615,7 @@ class BRFunctionalityTest:
             if pkt[0][2].code != 1 or pkt[0][2].code != 10 or pkt[0][2].code != 3:
                 self.comment += "\n  Incorrect Code Number"
                 self.packet_error = True
-        if self.packet_error == True:
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -635,8 +636,7 @@ class BRFunctionalityTest:
         sniffer.start()
         while not self.m_finished:
             mtu_values = [512, 513, 1024, 1025, 1278, 1279, 1280, 1281, 1282, 1472, 1480, 1498, 1499, 1500, 1518,
-                          1550,
-                          1600]
+                          1550, 1600]
             for mtu_value in mtu_values:
                 ip = IPv6(src=self.ipv6_source_address, dst=self.ipv6_destination_address)
                 icmp = ICMPv6PacketTooBig()
@@ -664,7 +664,7 @@ class BRFunctionalityTest:
             if pkt[0][ICMP].nexthopmtu not in mtu_values or pkt[0][ICMP].nexthopmtu != 1432:
                 self.comment += "\n  Incorrect MTU values"
                 self.packet_error = True
-        if self.packet_error == True:
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -709,7 +709,7 @@ class BRFunctionalityTest:
             if pkt[0][2].code != 0 or pkt[0][2].code != 1:
                 self.comment += "\n  Incorrect Code Number"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results_icmpv6.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -763,7 +763,7 @@ class BRFunctionalityTest:
             if count != 38:
                 self.comment += "\n  All packets not received"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results_icmpv6.txt", "a")
                 fh.write(self.comment)
                 fh.close()
@@ -814,7 +814,7 @@ class BRFunctionalityTest:
             if count == 2:
                 self.comment += "\n  Received two packets. Code 2 should be dropped"
                 self.packet_error = True
-            if self.packet_error == True:
+            if self.packet_error:
                 fh = open("test_results_icmpv6.txt", "a")
                 fh.write(self.comment)
                 fh.close()
