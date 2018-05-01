@@ -53,7 +53,7 @@ class BRFunctionalityTest:
     # Check for normal translation of packets
     # Send 128 frame size packet for ipv4/udp. DF=0
     # Received packet should be translated into IPv6 packet and no fragment header
-    def downstream_normal_packet_translation(self):
+    def downstream_udp_packet_translation(self):
         self.m_finished = False
         self.packet_error = False
         self.comment = "IPv4_PACKET_NORMAL_TRANSLATION"
@@ -76,17 +76,19 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-                if pkt[0][1].nh != 44:
-                    self.v6_address_check(pkt)
-                    self.v6_port_check(pkt)
-                    self.packet_error = True
-                    self.comment += "\n  Fragment Header added"
-                if self.packet_error:
-                    fh = open("test_results.txt", "a")
-                    fh.write(self.comment)
-                    fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  IPv6 UDP Packet Not Received"
+            return
+        self.v4_address_check(pkt)
+        self.v4_port_check(pkt)
+        if pkt[0][1].nh == 44:
+            self.v6_address_check(pkt)
+            self.v6_port_check(pkt)
+            self.packet_error = True
+            self.comment += "\n  Fragment Header added"
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -94,7 +96,7 @@ class BRFunctionalityTest:
     # Check for normal translation of packets
     # Send 128 frame size packet for ipv6/udp
     # Received packet should be translated into IPv4 packet with DF=1
-    def upstream_normal_packet_translation(self):
+    def upstream_udp_packet_translation(self):
         self.m_finished = False
         self.packet_error = False
         self.comment = "IPv6_PACKET_NORMAL_TRANSLATION"
@@ -118,20 +120,20 @@ class BRFunctionalityTest:
                     # file_name = self.comment.lower()+".pcap"
                     # wrpcap(file_name, pkt)
                     pktdump.write(pkt)
-            self.v4_address_check(pkt)
-            self.v4_port_check(pkt)
-            if pkt[0][IP].flags != 'DF':
-                self.comment += "\n  DF bit not set"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-            else:
-                self.comment += "\n  No packets received"
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  IPv4 UDP Packet Not Received"
+            return
+        self.v4_address_check(pkt)
+        self.v4_port_check(pkt)
+        if pkt[0][IP].flags != 'DF':
+            self.comment += "\n  DF bit not set"
+            self.packet_error = True
+        if self.packet_error:
+            fh = open("test_results.txt", "a")
+            fh.write(self.comment)
+            fh.close()
 
     # Check for ttl_expired
     # Send 128 frame size packet for ipv4/udp. ttl=0
@@ -141,7 +143,7 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "IPv4_TTL_EXPIRED"
         q = Queue()
-        v4_cap_filter = 'icmp'
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_source_address)
         sniffer = Thread(target=self.v4sniffer, args=(q, v4_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
@@ -159,8 +161,15 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv6 Packets Not Received"
+            return
+        self.v4_address_check(pkt)
+        self.v4_port_check(pkt)
         if pkt[0][1].proto != 1:
-            self.comment += "\n  ICMPv4 not received"
+            self.comment += "\n  Packet Type is not ICMP (Proto 1)"
             self.packet_error = True
         if pkt[0][2].type != 11:
             self.comment += "\n  Incorrect Type Number"
@@ -172,11 +181,6 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-        else:
-            self.comment += "\n  No packets received"
-            fh = open("test_results.txt", "a")
-            fh.write(self.comment)
-            fh.close()
 
     # Check for hop limit expired packets
     # Send 128 frame size packet for ipv6/udp and hop_limit=2
@@ -184,9 +188,9 @@ class BRFunctionalityTest:
     def upstream_hop_limit_expired(self):
         self.m_finished = False
         self.packet_error = False
-        self.comment = "IPv6_TTL_EXPIRED"
+        self.comment = "IPv6_Hot_Limit_EXPIRED"
         q = Queue()
-        v6_cap_filter = 'icmp6'
+        v6_cap_filter = 'icmp6 and src {}'.format(self.ipv6_source_address)
         sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
@@ -204,20 +208,22 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            if pkt[0][1].nh != 58:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 3:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            else:
-                self.comment += "\n  No packets received"
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv6 Hop Limit Expired not received"
+            return
+        self.v4_address_check(pkt)
+        self.v4_port_check(pkt)
+        if pkt[0][1].nh != 58:
+            self.comment += "\n  Packet Type is not ICMPv6 (Proto 58)"
+            self.packet_error = True
+        if pkt[0][2].type != 3:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
 
     # Check for mss clamping of packets
     # Send 128 frame size packet for ipv4/udp. mss = 2000
@@ -227,7 +233,7 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "IPv4_MSS_CLAMPING"
         q = Queue()
-        v6_cap_filter = 'src {}'.format(self.ipv6_destination_address)
+        v6_cap_filter = 'tcp and src {}'.format(self.ipv6_destination_address)
         # v6_cap_filter = 'src 2001:db8:ffff:ff00:c0:2:100:0'
         sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 1))
         sniffer.daemon = True
@@ -247,17 +253,17 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            self.v6_address_check(pkt)
-            self.v6_port_check(pkt)
-            if pkt[0][2].options[0][1] != 1432:
-                self.comment += "\n  MSS not clamped to 1432"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  IPv6 TCP Packet not received"
+            return
+        self.v6_address_check(pkt)
+        self.v6_port_check(pkt)
+        if pkt[0][2].options[0][1] != 1432:
+            self.comment += "\n  MSS not clamped to 1432"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -270,8 +276,7 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "IPv6_MSS_CLAMPING"
         q = Queue()
-        v4_cap_filter = 'src {}'.format(self.ipv4_destination_address)
-        # v4_cap_filter = 'ip src 198.18.0.12'
+        v4_cap_filter = 'tcp and dst {}'.format(self.ipv4_destination_address)
         sniffer = Thread(target=self.v4sniffer, args=(q, v4_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
@@ -290,17 +295,17 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  IPv4 TCP Packet not received"
+            return
         self.v4_address_check(pkt)
         self.v4_port_check(pkt)
         if pkt[0][2].options[0][1] != 1432:
             self.comment += "\n  MSS not clamped to 1432"
             self.packet_error = True
         if self.packet_error:
-            fh = open("test_results.txt", "a")
-            fh.write(self.comment)
-            fh.close()
-        else:
-            self.comment += "\n  No packets received"
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -313,7 +318,7 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "IPv4_OUTSIDE_PORT_NO"
         q = Queue()
-        v4_cap_filter = 'icmp or src {}'.format(self.ipv6_destination_address)
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_source_address)
         sniffer = Thread(target=self.v4sniffer, args=(q, v4_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
@@ -331,24 +336,24 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv4 Packet Not Received"
-                self.packet_error = True
-            if pkt[0][1].proto == 17:
-                self.comment += "\n Packet Translated Normally"
-                self.packet_error = True
-                self.comment += "\n ICMPv4 Packet Received\n  "
-                self.comment += pkt[0][2].type
-                self.comment += "\n  "
-                self.comment += pkt[0][2].code
-                self.comment += "\n"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 not received - the packet might have been dropped silently"
+            return
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv4 Packet Not Received"
+            self.packet_error = True
+        if pkt[0][1].proto == 17:
+            self.comment += "\n Packet Translated Normally"
+            self.packet_error = True
+            self.comment += "\n ICMPv4 Packet Received\n  "
+            self.comment += pkt[0][2].type
+            self.comment += "\n  "
+            self.comment += pkt[0][2].code
+            self.comment += "\n"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -361,7 +366,7 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "IPv6_OUTSIDE_PORT"
         q = Queue()
-        v6_cap_filter = 'icmp6'
+        v6_cap_filter = 'icmp6 and dst {}'.format(self.ipv6_source_address)
         sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
@@ -379,24 +384,24 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            if pkt[0][1].nh != 58:
-                self.comment += "\n  ICMP6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 1:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 5:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-            else:
-                self.comment += "\n No packets received"
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv6 not received - the packet might have been dropped silently"
+            return
+        if pkt[0][1].nh != 58:
+            self.comment += "\n  ICMP6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 1:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 5:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+        if self.packet_error:
+            fh = open("test_results.txt", "a")
+            fh.write(self.comment)
+            fh.close()
 
     # Check for packet fragmentation by the BR
     # Send 1499 frame size packet for ipv4/udp. DF=0
@@ -425,22 +430,22 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            if count == 0:
-                self.v6_address_check(pkt)
-                self.v6_port_check(pkt)
-            if pkt[0][1].nh != 44:
-                self.comment += "\n  No Fragment Header found"
-            if count == 1:  # Second Fragment
-                self.v6_address_check(pkt)
-                count += 1
-            if count != 2:
-                self.comment += "\n  Both fragments not received"
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 not received - the packet might have been dropped silently"
+            return
+        if count == 0:
+            self.v6_address_check(pkt)
+            self.v6_port_check(pkt)
+        if pkt[0][1].nh != 44:
+            self.comment += "\n  No Fragment Header found"
+        if count == 1:  # Second Fragment
+            self.v6_address_check(pkt)
+            count += 1
+        if count != 2:
+            self.comment += "\n  Both fragments not received"
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -475,22 +480,22 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-            if count == 0:
-                self.v6_address_check(pkt)
-                self.v6_port_check(pkt)
-            if count == 1:  # Second Fragment
-                self.v6_port_check(pkt)
-            if pkt[0][1].nh != 44:
-                self.comment += "\n  No Fragment Header found"
-                count += 1
-            if count != 2:
-                self.comment += "\n  Both fragments not received"
-            if self.packet_error:
-                fh = open("test_results.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 not received - the packet might have been dropped silently"
+            return
+        if count == 0:
+            self.v6_address_check(pkt)
+            self.v6_port_check(pkt)
+        if count == 1:  # Second Fragment
+            self.v6_port_check(pkt)
+        if pkt[0][1].nh != 44:
+            self.comment += "\n  No Fragment Header found"
+            count += 1
+        if count != 2:
+            self.comment += "\n  Both fragments not received"
+        if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -500,8 +505,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_ECHO_REQUEST"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 1))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -517,21 +522,22 @@ class BRFunctionalityTest:
                 pkt = q.get()
                 # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 8:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results_icmpv6.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Echo Request Not Received"
+            return
+        self.v4_address_check(pkt)
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  IP Protocol is not ICMPv6"
+            self.packet_error = True
+        if pkt[0][2].type != 8:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -541,8 +547,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_ECHO_REPLY"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 1))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 1))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -558,21 +564,22 @@ class BRFunctionalityTest:
                 pkt = q.get()
                 # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 0:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        self.v4_address_check(pkt)
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 0:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
         if self.packet_error:
-            fh = open("test_results_icmpv6.txt", "a")
-            fh.write(self.comment)
-            fh.close()
-        else:
-            self.comment += "\n  No packets received"
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -585,8 +592,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_DESTINATION_UNREACHABLE"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 5))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v4sniffer, args=(q, v4_cap_filter, 5))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -606,21 +613,22 @@ class BRFunctionalityTest:
                 pkt = q.get()
                 # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 3:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 1 or pkt[0][2].code != 10 or pkt[0][2].code != 3:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        self.v4_address_check(pkt)
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 3:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 1 or pkt[0][2].code != 10 or pkt[0][2].code != 3:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
         if self.packet_error:
-            fh = open("test_results_icmpv6.txt", "a")
-            fh.write(self.comment)
-            fh.close()
-        else:
-            self.comment += "\n  No packets received"
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -630,8 +638,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_PACKET_TOO_BIG"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 17))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 17))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -650,26 +658,26 @@ class BRFunctionalityTest:
             pktdump = PcapWriter(file_name, append=True, sync=True)
             while not q.empty():
                 pkt = q.get()
-                print(pkt.show())
+                #print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 3:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 4:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            if pkt[0][ICMP].nexthopmtu not in mtu_values or pkt[0][ICMP].nexthopmtu != 1432:
-                self.comment += "\n  Incorrect MTU values"
-                self.packet_error = True
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 3:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 4:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+        if pkt[0][ICMP].nexthopmtu not in mtu_values or pkt[0][ICMP].nexthopmtu != 1432:
+            self.comment += "\n  Incorrect MTU values"
+            self.packet_error = True
         if self.packet_error:
-            fh = open("test_results_icmpv6.txt", "a")
-            fh.write(self.comment)
-            fh.close()
-        else:
-            self.comment += "\n  No packets received"
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -679,8 +687,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_TIME_EXCEEDED"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 5))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 5))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -700,21 +708,21 @@ class BRFunctionalityTest:
                 pkt = q.get()
                 # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 11:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0 or pkt[0][2].code != 1:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results_icmpv6.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received" 
+            self.packet_error = True
+        if pkt[0][2].type != 11:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0 or pkt[0][2].code != 1:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -724,10 +732,11 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_PARAMETER_PROBLEM_POINTER"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 38))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 38))
         sniffer.daemon = True
         sniffer.start()
+        count = 0
         while not self.m_finished:
             for ptr_value in range(0, 40):
                 ip = IPv6(src=self.ipv6_source_address, dst=self.ipv6_destination_address)
@@ -741,34 +750,33 @@ class BRFunctionalityTest:
         if not q.empty():
             file_name = self.comment.lower() + ".pcap"
             pktdump = PcapWriter(file_name, append=True, sync=True)
-            count = 0
             while not q.empty():
                 pkt = q.get()
-                print(pkt.show())
+                # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 12:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-            ipv4_ptr_values = [x for x in range(17)]
-            if pkt[0][ICMP].ptr not in ipv4_ptr_values:
-                self.comment += "\n  Incorrect Pointer values"
-                self.packet_error = True
-            count += 1
-            if count != 38:
-                self.comment += "\n  All packets not received"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results_icmpv6.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 12:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+        ipv4_ptr_values = [x for x in range(17)]
+        if pkt[0][ICMP].ptr not in ipv4_ptr_values:
+            self.comment += "\n  Incorrect Pointer values"
+            self.packet_error = True
+        count += 1
+        if count != 38:
+            self.comment += "\n  All packets not received"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
             fh.close()
@@ -778,8 +786,8 @@ class BRFunctionalityTest:
         self.packet_error = False
         self.comment = "ICMPv6_PARAMETER_PROBLEM"
         q = Queue()
-        v6_cap_filter = 'icmp'
-        sniffer = Thread(target=self.v6sniffer, args=(q, v6_cap_filter, 2))
+        v4_cap_filter = 'icmp and dst {}'.format(self.ipv4_destination_address)
+        sniffer = Thread(target=self.v6sniffer, args=(q, v4_cap_filter, 2))
         sniffer.daemon = True
         sniffer.start()
         while not self.m_finished:
@@ -801,27 +809,28 @@ class BRFunctionalityTest:
                 pkt = q.get()
                 # print(pkt.show())
                 pktdump.write(pkt)
-            if pkt[0][1].proto != 1:
-                self.comment += "\n  ICMPv6 not received"
-                self.packet_error = True
-            if pkt[0][2].type != 3:
-                self.comment += "\n  Incorrect Type Number"
-                self.packet_error = True
-            if pkt[0][2].code != 0:
-                self.comment += "\n  Incorrect Code Number"
-                self.packet_error = True
-                count += 1
-            if count == 2:
-                self.comment += "\n  Received two packets. Code 2 should be dropped"
-                self.packet_error = True
-            if self.packet_error:
-                fh = open("test_results_icmpv6.txt", "a")
-                fh.write(self.comment)
-                fh.close()
-        else:
-            self.comment += "\n  No packets received"
+        try:
+            pkt
+        except NameError:
+            self.comment += "\n  ICMPv4 Packet not received"
+            return
+        if pkt[0][1].proto != 1:
+            self.comment += "\n  ICMPv6 not received"
+            self.packet_error = True
+        if pkt[0][2].type != 3:
+            self.comment += "\n  Incorrect Type Number"
+            self.packet_error = True
+        if pkt[0][2].code != 0:
+            self.comment += "\n  Incorrect Code Number"
+            self.packet_error = True
+            count += 1
+        if count == 2:
+            self.comment += "\n  Received two packets. Code 2 should be dropped"
+            self.packet_error = True
+        if self.packet_error:
             fh = open("test_results_icmpv6.txt", "a")
             fh.write(self.comment)
+            fh.close()
 
     def v6_address_check(self, pkt):
         if pkt[0][IPv6].src != self.ipv6_destination_address:
@@ -879,8 +888,8 @@ if __name__ == '__main__':
     ipv6_udp_or_tcp_source_port = 16606
     ipv6_udp_or_tcp_destination_port = 65000
     psid_number = 3
-    ipv4_interface = "ens160"
-    ipv6_interface = "ens160"
+    ipv4_interface = "ens192"
+    ipv6_interface = "ens192"
     # ******************** VARIABLES - END ******************#
 
     BR_obj = BRFunctionalityTest(ipv4_source_address,
@@ -894,8 +903,8 @@ if __name__ == '__main__':
                                  psid_number,
                                  ipv4_interface,
                                  ipv6_interface)
-    BR_obj.downstream_normal_packet_translation()
-    BR_obj.upstream_normal_packet_translation()
+    BR_obj.downstream_udp_packet_translation()
+    BR_obj.upstream_udp_packet_translation()
     BR_obj.downstream_ttl_expired()
     BR_obj.upstream_hop_limit_expired()
     BR_obj.downstream_mss_clamping()
