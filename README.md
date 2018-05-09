@@ -2,11 +2,12 @@
 Python/Scapy to perform verification of MAP-T Border Relays
 
 These scripts use Scapy to generate packets to be translated by a MAP-T Border Relay, and then receive the packets back
-and verify they were translated appropriately via RFC 7599.
-
-There are two current scripts:
-  - Functionality Test which tests upstream/downstream traffic, ttl/hop count expiration, TCP MSS clamping, and fragmentation.
-  - ICMPv6, which verifies that ICMPv6 packets are translated to ICMP appropriately.
+and verify they were translated appropriately via RFC 7599. These tests include:
+ - Upstream/downstream traffic 
+ - TTL/hop count expiration 
+ - TCP MSS clamping 
+ - Fragmentation
+ - A number of ICMPv6 tests.
   
 These scripts are built for testing a rule with the following parameters:
   - IPv4 Prefix: 198.18.0.0/24
