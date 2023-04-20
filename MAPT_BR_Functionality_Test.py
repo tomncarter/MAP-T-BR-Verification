@@ -6,7 +6,7 @@ import pyswmap
 import scapy.contrib.igmp
 import ipaddress
 from threading import Thread
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from time import sleep
 from multiprocessing import Pool, TimeoutError, current_process
 import time
@@ -95,9 +95,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Downstream UDP Packet: FAIL"
+            print("Downstream UDP Packet: FAIL")
         if not self.packet_error:
-            print "Downstream UDP Packet: PASS"
+            print("Downstream UDP Packet: PASS")
 
     # Check for normal translation of packets
     # Send 128 frame size packet for ipv6/udp
@@ -139,9 +139,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream UDP Packet: FAIL"
+            print("Upstream UDP Packet: FAIL")
         if not self.packet_error:
-            print "Upstream UDP Packet: PASS"
+            print("Upstream UDP Packet: PASS")
 
     # Check for ttl_expired
     # Send 128 frame size packet for ipv4/udp. ttl=0
@@ -190,9 +190,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "TTL Expired: FAIL"
+            print("TTL Expired: FAIL")
         if not self.packet_error:
-            print "TTL Expired: PASS"
+            print("TTL Expired: PASS")
 
     # Check for hop limit expired packets
     # Send 128 frame size packet for ipv6/udp and hop_limit=2
@@ -238,7 +238,7 @@ class BRFunctionalityTest:
             self.comment += "\n  Incorrect Code Number"
             self.packet_error = True
         if not self.packet_error:
-            print "ICMPv6 Hop Limit Expired: PASS"
+            print("ICMPv6 Hop Limit Expired: PASS")
 
     # Check for mss clamping of packets
     # Send 128 frame size packet for ipv4/udp. mss = 2000
@@ -286,7 +286,7 @@ class BRFunctionalityTest:
             fh.write(self.comment)
             fh.close()
         if not self.packet_error:
-            print "Downstream TCP MSS Clamping: PASS"
+            print("Downstream TCP MSS Clamping: PASS")
 
     # Check for mss clamping
     # Send 128 frame size packet for ipv6/tcp with mss value = 2000
@@ -326,15 +326,15 @@ class BRFunctionalityTest:
         self.v4_address_check(pkt)
         self.v4_port_check(pkt)
         if pkt[0][2].options[0][1] != 1432:
-            self.comment += "\n  MSS not clamped to 1432 - clamped to " +  pkt[0][2].options[0][1]
+            self.comment += "\n  MSS not clamped to 1432 - clamped to " +  str(pkt[0][2].options[0][1])
             self.packet_error = True
         if self.packet_error:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream TCP MSS Clamping: FAIL"
+            print("Upstream TCP MSS Clamping: FAIL")
         if not self.packet_error:
-            print "Upstream TCP MSS Clamping: PASS"
+            print("Upstream TCP MSS Clamping: PASS")
 
     # Check for outside domain port number
     # Send 128 frame size packet for ipv4/udp, udp.dstport=1001
@@ -362,15 +362,15 @@ class BRFunctionalityTest:
                 # file_name = self.comment.lower()+".pcap"
                 # wrpcap(file_name, pkt)
                 pktdump.write(pkt)
-	try:
-            pkt
-        except NameError:
-            self.comment += "\n  ICMPv4 not received - the packet might have been dropped silently"
-            fh = open("test_results.txt", "a")
-            fh.write(self.comment)
-            fh.close()
-            print "Packet to Reserved Port Dropped: CONDITIONAL PASS"
-            return
+            try:
+              pkt
+            except NameError:
+              self.comment += "\n  ICMPv4 not received - the packet might have been dropped silently"
+              fh = open("test_results.txt", "a")
+              fh.write(self.comment)
+              fh.close()
+              print("Packet to Reserved Port Dropped: CONDITIONAL PASS")
+              return
         if pkt[0][1].proto != 1:
             self.comment += "\n  ICMPv4 Packet Not Received"
             self.packet_error = True
@@ -387,9 +387,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "IPv4 Packet to Dest Reserved Port Dropped: FAIL"
+            print("IPv4 Packet to Dest Reserved Port Dropped: FAIL")
         if not self.packet_error:
-            print "IPv4 Packet to Dest Reserved Port Dropped: PASS"
+            print("IPv4 Packet to Dest Reserved Port Dropped: PASS")
 
     # Check for outside port
     # Send 128 frame size packet for ipv6/udp and udp.srcport = 1001
@@ -424,7 +424,7 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Packet to Reserved Port Dropped: CONDITIONAL PASS"
+            print("Packet to Reserved Port Dropped: CONDITIONAL PASS")
             return
         if pkt[0][1].nh != 58:
             self.comment += "\n  ICMP6 not received"
@@ -439,9 +439,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "IPv6 Packet to Source Reserved Port Dropped: FAIL"
+            print("IPv6 Packet to Source Reserved Port Dropped: FAIL")
         if not self.packet_error:
-            print "IPv4 Packet to Dest Reserved Port Dropped: PASS"
+            print("IPv4 Packet to Dest Reserved Port Dropped: PASS")
 
     # Check for packet fragmentation by the BR
     # Send 1499 frame size packet for ipv4/udp. DF=0
@@ -475,7 +475,7 @@ class BRFunctionalityTest:
         except NameError:
             self.comment += "\n  Fragments not received"
             return
-            print "IPv4 Fragmentation by BR:: FAIL"
+            print("IPv4 Fragmentation by BR:: FAIL")
         if count == 0:
             self.v6_address_check(pkt)
             self.v6_port_check(pkt)
@@ -490,9 +490,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "IPv4 Fragmentation by BR:: FAIL"
+            print("IPv4 Fragmentation by BR:: FAIL")
         if not self.packet_error:
-            print "IPv4 Fragmentation by BR: PASS"
+            print("IPv4 Fragmentation by BR: PASS")
 
     # Check for packet fragmets sent to the BR
     # Send fragments for ipv4/udp. DF=0
@@ -529,7 +529,7 @@ class BRFunctionalityTest:
                 pkt
             except NameError:
                 self.comment += "\n Fragments forwarded by BR not received"
-                print "IPv4 Fragments forwarded by BR: FAIL"
+                print("IPv4 Fragments forwarded by BR: FAIL")
                 return
             if count == 0:
                 self.v6_address_check(pkt)
@@ -545,9 +545,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "IPv4 Fragments forwarded by BR: FAIL"
+            print("IPv4 Fragments forwarded by BR: FAIL")
         if not self.packet_error:
-            print "IPv4 Fragments forwarded by BR: PASS"
+            print("IPv4 Fragments forwarded by BR: PASS")
 
     def echo_request(self):
         self.m_finished = False
@@ -575,7 +575,7 @@ class BRFunctionalityTest:
             pkt
         except NameError:
             self.comment += "\n  ICMPv4 Echo Request Not Received"
-            print "Upstream Echo Request: FAIL"
+            print("Upstream Echo Request: FAIL")
             return
         self.v4_address_check(pkt)
         if pkt[0][1].proto != 1:
@@ -591,9 +591,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream Echo Request: FAIL"
+            print("Upstream Echo Request: FAIL")
         if not self.packet_error:
-            print "Upstream Echo Request: PASS"
+            print("Upstream Echo Request: PASS")
 
     def echo_reply(self):
         self.m_finished = False
@@ -621,7 +621,7 @@ class BRFunctionalityTest:
             pkt
         except NameError:
             self.comment += "\n  ICMPv4 Packet not received"
-            print "Upstream Reply Respone: FAIL"
+            print("Upstream Reply Respone: FAIL")
             return
         self.v4_address_check(pkt)
         if pkt[0][1].proto != 1:
@@ -637,9 +637,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream Reply Respone: FAIL"
+            print("Upstream Reply Respone: FAIL")
         if not self.packet_error:
-            print "Upstream Reply Respone: PASS"
+            print("Upstream Reply Respone: PASS")
 
     # Destination Unreachable - No route to destination, Communication with destination administratively prohibited,
     # Beyond scope of source address, Address unreachable, Port unreachable (Type 1, Code - 0/1/2/3/4)
@@ -673,7 +673,7 @@ class BRFunctionalityTest:
                 pkt
             except NameError:
                 self.comment += "\n  ICMPv4 Packet not received"
-                print "Upstream Dest Unreachable Translation: FAIL"
+                print("Upstream Dest Unreachable Translation: FAIL")
                 return
             self.v4_address_check(pkt)
             if pkt[0][1].proto != 1:
@@ -701,9 +701,9 @@ class BRFunctionalityTest:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
-                print "Upstream Dest Unreachable Translation for ICMPv6 Code " + str(code_value) + " : FAIL"
+                print("Upstream Dest Unreachable Translation for ICMPv6 Code " + str(code_value) + " : FAIL")
             if not self.packet_error:
-                print "Upstream Dest Unreachable Translation for ICMPv6 Code " + str(code_value) + " : PASS"
+                print("Upstream Dest Unreachable Translation for ICMPv6 Code " + str(code_value) + " : PASS")
 
     def packet_too_big(self):
         mtu_values = [512, 513, 1024, 1025, 1278, 1279, 1280, 1281, 1282, 1472, 1480, 1498, 1499, 1500, 1518, 1550, 1600]
@@ -737,7 +737,7 @@ class BRFunctionalityTest:
                 pkt
             except NameError:
                 self.comment += "\n  ICMPv4 Packet not received"
-                print "Upstream Packet too Big Translation: FAIL"
+                print("Upstream Packet too Big Translation: FAIL")
                 return
             self.v4_address_check(pkt)
             if pkt[0][1].proto != 1:
@@ -756,9 +756,9 @@ class BRFunctionalityTest:
                 fh = open("test_results.txt", "a")
                 fh.write(self.comment)
                 fh.close()
-                print "Upstream Packet Too Big Translation (IPv6: " + str(mtu_value) + ", IPv4: " + str(rx_mtu) + "): FAIL"
+                print("Upstream Packet Too Big Translation (IPv6: " + str(mtu_value) + ", IPv4: " + str(rx_mtu) + "): FAIL")
             if not self.packet_error:
-                print "Upstream Packet Too Big Translation (IPv6: " + str(mtu_value) + ", IPv4: " + str(rx_mtu) + "): PASS"
+                print("Upstream Packet Too Big Translation (IPv6: " + str(mtu_value) + ", IPv4: " + str(rx_mtu) + "): PASS")
 
     def time_exceeded(self):
         self.m_finished = False
@@ -788,7 +788,7 @@ class BRFunctionalityTest:
             pkt
         except NameError:
             self.comment += "\n  ICMPv4 Packet not received"
-            print "Upstream Time Exceeded Translation: FAIL"
+            print("Upstream Time Exceeded Translation: FAIL")
             return
         self.v4_address_check(pkt)
         if pkt[0][1].proto != 1:
@@ -804,9 +804,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream Time Exceeded Translation: FAIL"
+            print("Upstream Time Exceeded Translation: FAIL")
         if not self.packet_error:
-            print "Upstream Time Exceeded Translation: PASS"
+            print("Upstream Time Exceeded Translation: PASS")
 
     def parameter_problem_pointer(self):
         self.comment = "\n ICMPv6_PARAMETER_PROBLEM_POINTER"
@@ -839,7 +839,7 @@ class BRFunctionalityTest:
                 pkt
             except NameError:
                 self.comment += "\n  ICMPv4 Packet not received"
-                print "Upstream Parameter Problem Pointer Translation: FAIL"
+                print("Upstream Parameter Problem Pointer Translation: FAIL")
                 return
             if pkt[0][1].proto != 1:
                 self.comment += "\n  ICMPv4 not received"
@@ -862,9 +862,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream Parameter Problem Pointer Translation: FAIL"
+            print("Upstream Parameter Problem Pointer Translation: FAIL")
         if not self.packet_error:
-            print "Upstream Parameter Problem Pointer Translation: PASS"
+            print("Upstream Parameter Problem Pointer Translation: PASS")
 
 
     def parameter_problem(self):
@@ -899,7 +899,7 @@ class BRFunctionalityTest:
             pkt
         except NameError:
             self.comment += "\n  ICMPv4 Packet not received"
-            print "Upstream Parameter Problem Translation: FAIL"
+            print("Upstream Parameter Problem Translation: FAIL")
             return
         self.v4_address_check(pkt)
         if pkt[0][1].proto != 1:
@@ -919,9 +919,9 @@ class BRFunctionalityTest:
             fh = open("test_results.txt", "a")
             fh.write(self.comment)
             fh.close()
-            print "Upstream Parameter Problem Translation: FAIL"
+            print("Upstream Parameter Problem Translation: FAIL")
         if not self.packet_error:
-            print "Upstream Parameter Problem Translation: PASS"
+            print("Upstream Parameter Problem Translation: PASS")
 
     def v6_address_check(self, pkt):
         if pkt[0][IPv6].src != self.ipv6_destination_address:
@@ -978,8 +978,8 @@ if __name__ == '__main__':
     ipv6_udp_or_tcp_source_port = 16606
     ipv6_udp_or_tcp_destination_port = 65000
     psid_number = 3
-    ipv4_interface = "ens192"
-    ipv6_interface = "ens192"
+    ipv4_interface = "eth1"
+    ipv6_interface = "eth1"
     # ******************** VARIABLES - END ******************#
 
     BR_obj = BRFunctionalityTest(ipv4_source_address,
@@ -993,20 +993,20 @@ if __name__ == '__main__':
                                  psid_number,
                                  ipv4_interface,
                                  ipv6_interface)
-    #BR_obj.downstream_udp_packet_translation()
-    #BR_obj.upstream_udp_packet_translation()
-    #BR_obj.downstream_ttl_expired()
-    #BR_obj.upstream_hop_limit_expired()
-    #BR_obj.downstream_mss_clamping()
-    #BR_obj.upstream_mss_clamping()
-    #BR_obj.downstream_outside_port()
-    #BR_obj.upstream_outside_port()
-    #BR_obj.downstream_fragmentation()
-    #BR_obj.downstream_fragments()
-    #BR_obj.echo_request()
-    #BR_obj.echo_reply()
-    #BR_obj.destination_unreachable()
-    #BR_obj.packet_too_big()
-    #BR_obj.time_exceeded()
+    BR_obj.downstream_udp_packet_translation()
+    BR_obj.upstream_udp_packet_translation()
+    BR_obj.downstream_ttl_expired()
+    BR_obj.upstream_hop_limit_expired()
+    BR_obj.downstream_mss_clamping()
+    BR_obj.upstream_mss_clamping()
+    BR_obj.downstream_outside_port()
+    BR_obj.upstream_outside_port()
+    BR_obj.downstream_fragmentation()
+    BR_obj.downstream_fragments()
+    BR_obj.echo_request()
+    BR_obj.echo_reply()
+    BR_obj.destination_unreachable()
+    BR_obj.packet_too_big()
+    BR_obj.time_exceeded()
     BR_obj.parameter_problem_pointer()
 # ******************** MAIN FUNCTION - END ******************#
